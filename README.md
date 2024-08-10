@@ -26,8 +26,8 @@ The Auto Register Spark UI controller operates by utilizing a Kubernetes informe
 1. **Clone the repository**:
 
     ```shell
-    git clone https://github.com/yourusername/auto-register-k8s-spark-ui.git
-    cd auto-register-k8s-spark-ui
+    git clone https://github.com/lmouhib/auto-register-spark-ui-k8s.git
+    cd auto-register-spark-ui-k8s
     ```
 
 2. **Deploy the Spark UI Auto Register Service**:
