@@ -16,39 +16,38 @@ The Auto Register Spark UI controller operates by utilizing a Kubernetes informe
 
 ## Prerequisites
 
-- Kubernetes cluster
 - `kubectl` command-line tool
-- Docker (for building custom images)
+- Docker #optional
 - Nginx Controller deployed in the Kubernete cluster.
 
 ## Installation
 
 1. **Clone the repository**:
 
-    ```shell
-    git clone https://github.com/lmouhib/auto-register-spark-ui-k8s.git
-    cd auto-register-spark-ui-k8s
-    ```
+```shell
+git clone https://github.com/lmouhib/auto-register-spark-ui-k8s.git
+cd auto-register-spark-ui-k8s
+```
 
 2. **Deploy the Spark UI Auto Register Service**:
 
 The deployment below use an image built and hosted in the following repository `lmouhib/auto-register-spark-ui-k8s
 `, you can use the provided Dockerfile in this repository to build and deploy your own image.
 
-    ```shell
-    kubectl apply -f auto_register_spark_ui_deployment.yaml
-    ```
+```shell
+kubectl apply -f auto_register_spark_ui_deployment.yaml
+```
 
 3. Customizing the controller behavior
 The controller expose certain paramter to configure how the Spark UI path is constructed or how it is detected. 
 
-        **SPARK_LABEL_SERVICE_SELECTOR**: The label selector used to identify Spark services. Default is "spark-app-selector".
+    _**SPARK_LABEL_SERVICE_SELECTOR**_: The label selector used to identify Spark services. Default is "spark-app-selector".
 
-        **SPARK_NAMESPACE**: The Kubernetes namespace where the Spark jobs are running. Default the controller will listen to all namespaces.
+    _**SPARK_NAMESPACE**_: The Kubernetes namespace where the Spark jobs are running. Default the controller will listen to all namespaces.
 
-        **NAMESPACED_INGRESS_PATH**: Whether to use namespaced ingress paths. Default is "true".
+    _**NAMESPACED_INGRESS_PATH**_: Whether to use namespaced ingress paths. Default is "true".
         
-        **INGRESS_NAME**: The name of the ingress resource to be created. Default is "spark-ui-ingress".
+    _**INGRESS_NAME**_: The name of the ingress resource to be created. Default is "spark-ui-ingress".
 
 
 ## Usage
