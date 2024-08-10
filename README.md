@@ -44,7 +44,7 @@ The controller expose certain paramter to configure how the Spark UI path is con
 
         **SPARK_LABEL_SERVICE_SELECTOR**: The label selector used to identify Spark services. Default is "spark-app-selector".
 
-        **SPARK_NAMESPACE**: The Kubernetes namespace where the Spark jobs are running. Default is "default" namespace.
+        **SPARK_NAMESPACE**: The Kubernetes namespace where the Spark jobs are running. Default the controller will listen to all namespaces.
 
         **NAMESPACED_INGRESS_PATH**: Whether to use namespaced ingress paths. Default is "true".
         
