@@ -66,7 +66,7 @@ In order for the Spark UI to be exposed correctly, you need to configure the spa
     --conf spark.kubernetes.container.image=spark:latest \
     --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
     --conf spark.ui.proxyRedirectUri=http://ngnix-ip-or-dns-name \
-    --conf spark.ui.proxyBase=pi \
+    --conf spark.ui.proxyBase=/pi \
     local:///opt/spark/examples/src/main/python/pi.py 1000000
 ```
 
