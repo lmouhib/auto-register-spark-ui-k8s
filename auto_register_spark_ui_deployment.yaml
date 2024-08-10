@@ -49,13 +49,21 @@ spec:
       containers:
         - name: auto-register-k8s-spark-ui
           image: lmouhib/auto-register-spark-ui-k8s
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 3000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
           env:
             - name: SPARK_LABEL_SERVICE_SELECTOR
               value: "spark-app-selector"
             - name: SPARK_NAMESPACE
               value: "default"
             - name: NAMESPACED_INGRESS_PATH
-              value: "true"
+              value: "false"
             - name: INGRESS_NAME
               value: "spark-ui-ingress"
           resources:
