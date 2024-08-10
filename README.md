@@ -75,3 +75,4 @@ The Spark UI for the application submitted above would be in the following addre
 # Improvements
 
 * Currently this controller work only with `nginx`, one improvement is to make it generic and to work with any ingress that suport URL rewrite.
+* Add unit tests
