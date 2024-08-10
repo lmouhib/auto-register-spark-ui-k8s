@@ -1,5 +1,5 @@
 # Use the official Golang image as the base image
-FROM golang:1.22-alpine as builder
+FROM golang:1.22-alpine AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
@@ -22,11 +22,21 @@ FROM alpine:latest
 # Install CA certificatesdocker run -it auto-register-k8s-spark-ui sh
 RUN apk --no-cache add ca-certificates
 
-# Set the working directory inside the container
-WORKDIR /root/
+# Create a user and group
+RUN addgroup -g 3000 -S auto-register-ui && \
+    adduser -u 1000 -S auto-register-ui -G auto-register-ui
+
+# Set the working directory
+WORKDIR /app
 
 # Copy the built Go binary from the builder stage
-COPY --from=builder /app/auto-register-k8s-spark-ui .
+COPY --from=builder /app/auto-register-k8s-spark-ui /app/
+
+# Change ownership of the application files
+RUN chown -R auto-register-ui:auto-register-ui /app
+
+# Switch to the non-root user
+USER auto-register-ui:auto-register-ui
 
 # Command to run the application
 CMD ["./auto-register-k8s-spark-ui"]
