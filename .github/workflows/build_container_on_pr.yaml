@@ -30,5 +30,12 @@ jobs:
       - name: Build Docker image
         run: docker build -t auto-register-spark-ui-k8s:latest .
 
-      - name: Verify Docker image
-        run: docker run --rm auto-register-spark-ui-k8s:latest
+      - name: Run Docker image and check for error
+        id: docker_run
+        run: |
+          set -o pipefail
+          docker run --rm auto-register-spark-ui-k8s:latest 2>&1 | tee output.log
+          if grep -q "unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST" output.log; then
+            echo "Error found: unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST"
+            exit 1
+          fi
