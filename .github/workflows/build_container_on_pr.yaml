@@ -1,4 +1,4 @@
-name: Build Check
+name: Build Container Check
 
 on:
   pull_request:
