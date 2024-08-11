@@ -71,6 +71,9 @@ In order for the Spark UI to be exposed correctly, you need to configure the spa
 
 The Spark UI for the application submitted above would be in the following address : `http://ngnix-ip-or-dns-name/pi/`.
 
+### Demo
+
+![Demo gif](./assets/demo.gif)
 
 # Improvements
 
