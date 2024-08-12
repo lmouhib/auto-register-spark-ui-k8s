@@ -73,7 +73,8 @@ The Spark UI for the application submitted above would be in the following addre
 
 ### Demo
 
-![Demo gif](./assets/demo.gif)
+<img src="https://github.com/lmouhib/auto-register-spark-ui-k8s/blob/main/assets/demo.gif" width="600" alt="Demo gif">
+
 
 # Improvements
 
