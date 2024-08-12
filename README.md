@@ -69,6 +69,11 @@ In order for the Spark UI to be exposed correctly, you need to configure the spa
     local:///opt/spark/examples/src/main/python/pi.py 1000000
 ```
 
+
+_Note_: You can get `proxyRedirectUri` by running the command: `kubectl  get svc ingress-nginx-controller -n ingress-nginx`.
+The command assume you deployed `nginx` in the following namespace `ingress-nginx`, and the name of `nginx` service of type `LOAD BALANCER` is `ingress-nginx-controller`
+and will provide an `EXTERNAL-IP` that should be used as `proxyRedirectUri`.
+
 The Spark UI for the application submitted above would be in the following address : `http://ngnix-ip-or-dns-name/pi/`.
 
 ### Demo
