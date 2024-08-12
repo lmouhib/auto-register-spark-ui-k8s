@@ -73,7 +73,7 @@ The Spark UI for the application submitted above would be in the following addre
 
 ### Demo
 
-![Demo gif](./assets/demo.gif)
+![Demo gif](./assets/demo.gif =853x480)
 
 # Improvements
 
