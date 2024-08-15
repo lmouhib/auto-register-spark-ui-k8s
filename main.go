@@ -57,7 +57,7 @@ func main() {
 	if ingressType != "" {
 		logger.Infof("The ingress type is: %v", ingressType)
 	} else {
-		ingressType = "traefik"
+		ingressType = "nginx"
 		logger.Infof("Using default ingress type: %v", ingressType)
 	}
 
