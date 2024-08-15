@@ -29,6 +29,8 @@ RUN addgroup -g 3000 -S auto-register-ui && \
 # Set the working directory
 WORKDIR /app
 
+COPY LICENSE LICENSE
+
 # Copy the built Go binary from the builder stage
 COPY --from=builder /app/auto-register-k8s-spark-ui /app/
 

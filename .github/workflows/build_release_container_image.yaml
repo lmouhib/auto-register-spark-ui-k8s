@@ -33,3 +33,9 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/auto-register-spark-ui-k8s:${{ github.event.inputs.version }}
             ${{ secrets.DOCKERHUB_USERNAME }}/auto-register-spark-ui-k8s:latest
+          labels: |
+            maintainer=${{ secrets.DOCKERHUB_USERNAME }}
+            version=${{ github.event.inputs.version }}
+            description="Auto register Spark UI for Spark on Kubernetes"
+            org.opencontainers.image.source=https://github.com/lmouhib/auto-register-spark-ui-k8s
+            org.opencontainers.image.licenses=MIT
