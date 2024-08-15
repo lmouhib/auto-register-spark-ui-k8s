@@ -52,6 +52,11 @@ The controller expose certain paramter to configure how the Spark UI path is con
 
 ## Usage
 
+### Ingress Controllers supported
+
+* NGINX
+* Traefik
+
 ### Submitting a Spark Job
 
 In order for the Spark UI to be exposed correctly, you need to configure the spark application to use the nginx proxy. Below you will find an example with `spark-submit`. Note, the `spark.ui.proxyRedirectUri` can be defined as default in the `spark-default` file.
@@ -87,3 +92,4 @@ The Spark UI for the application submitted above would be in the following addre
 * Add unit tests
 * Provide build instructions to push image to Image repository for cloud providers.
 * Provide example with authentication setup for `NGINX`.
+* Provide a way for user to pass or define authentication method

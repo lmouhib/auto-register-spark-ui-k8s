@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	v1 "k8s.io/api/core/v1"
@@ -21,25 +22,40 @@ func createOrUpdateSparkUIIngressObject(
 	clientset *kubernetes.Clientset,
 	service *v1.Service,
 	ingressPath networkingv1.HTTPIngressPath,
-	ingressName string) {
+	ingressName string,
+	ingressType string) {
 
 	ingressClient := clientset.NetworkingV1().Ingresses(service.Namespace)
 
 	ingress, err := ingressClient.Get(context.TODO(), ingressName, metav1.GetOptions{})
 
+	traefikMiddlewareName := "spark-ui-url-strip"
+
 	if err != nil {
 		if errors.IsNotFound(err) {
+
+			var ingressClassName *string
+
+			if ingressType == "traefik" {
+				// Create the Traefik middleware
+				err := ManageTraefikMiddleware(service.Namespace, "create", traefikMiddlewareName)
+				if err != nil {
+					logger.Error(err)
+					return
+				}
+				ingressClassName = nil
+			} else {
+				ingressClassName = func() *string { s := "nginx"; return &s }()
+			}
+
 			ingress := &networkingv1.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ingressName,
-					Namespace: service.Namespace,
-					Annotations: map[string]string{
-						"nginx.ingress.kubernetes.io/rewrite-target": "/$2",
-						"nginx.ingress.kubernetes.io/use-regex":      "true",
-					},
+					Name:        ingressName,
+					Namespace:   service.Namespace,
+					Annotations: createIngressAnnotations(ingressType, service, traefikMiddlewareName),
 				},
 				Spec: networkingv1.IngressSpec{
-					IngressClassName: func() *string { s := "nginx"; return &s }(),
+					IngressClassName: ingressClassName,
 					Rules: []networkingv1.IngressRule{
 						{
 							IngressRuleValue: networkingv1.IngressRuleValue{
@@ -102,7 +118,13 @@ func createOrUpdateSparkUIIngressObject(
 	}
 }
 
-func Add(ctx context.Context, clientset *kubernetes.Clientset, service *v1.Service, namespacedIngressPath bool, ingressName string) {
+func Add(
+	ctx context.Context,
+	clientset *kubernetes.Clientset,
+	service *v1.Service,
+	namespacedIngressPath bool,
+	ingressName string,
+	ingressType string) {
 
 	logger.Infof("Create ingress rule for Spark Application : %s \n", service.GetName())
 
@@ -130,15 +152,23 @@ func Add(ctx context.Context, clientset *kubernetes.Clientset, service *v1.Servi
 	}
 
 	//Call the function responsible for creating or patching the Ingress object
-	createOrUpdateSparkUIIngressObject(ctx, clientset, service, ingressPath, ingressName)
+	createOrUpdateSparkUIIngressObject(ctx, clientset, service, ingressPath, ingressName, ingressType)
 
 }
 
-func Delete(ctx context.Context, clientset *kubernetes.Clientset, service *v1.Service, namespacedIngressPath bool, ingressName string) {
+func Delete(
+	ctx context.Context,
+	clientset *kubernetes.Clientset,
+	service *v1.Service,
+	namespacedIngressPath bool,
+	ingressName string,
+	ingressType string) {
 
 	var sparkAppName string
 
 	namespace := service.Namespace
+
+	traefikMiddlewareName := "spark-ui-url-strip"
 
 	// Get the existing ingress
 	ingress, err := clientset.NetworkingV1().Ingresses(namespace).Get(ctx, ingressName, metav1.GetOptions{})
@@ -173,6 +203,12 @@ func Delete(ctx context.Context, clientset *kubernetes.Clientset, service *v1.Se
 			return
 		}
 		log.Printf("Deleted ingress %s as it had no paths left", ingressName)
+
+		// Delete the Traefik middleware
+		if ingressType == "traefik" {
+			ManageTraefikMiddleware(namespace, "delete", traefikMiddlewareName)
+			log.Printf("Deleted middleware %s as ingress object is deleted", traefikMiddlewareName)
+		}
 		return
 	}
 
@@ -218,4 +254,27 @@ func buidSparkUiPath(namespacedIngressPath bool, service *v1.Service, sparkAppNa
 	}
 
 	return sparkUIPath
+}
+func createIngressAnnotations(ingressType string, service *v1.Service, traefikMiddlewareName string) map[string]string {
+
+	switch ingressType {
+
+	case "nginx":
+		return map[string]string{
+			"nginx.ingress.kubernetes.io/rewrite-target": "/$2",
+			"nginx.ingress.kubernetes.io/use-regex":      "true",
+		}
+
+	case "traefik":
+		return map[string]string{
+			"traefik.ingress.kubernetes.io/router.middlewares": fmt.Sprintf("%s-%s@kubernetescrd", service.Namespace, traefikMiddlewareName),
+			"traefik.ingress.kubernetes.io/router.entrypoints": "web",
+			"traefik.ingress.kubernetes.io/router.pathmatcher": "PathRegexp",
+		}
+
+	default:
+		logger.Errorf("unsupported ingress type: %s", ingressType)
+		return nil
+	}
+
 }
