@@ -49,8 +49,15 @@ The controller expose certain paramter to configure how the Spark UI path is con
         
     _**INGRESS_NAME**_: The name of the ingress resource to be created. Default is "spark-ui-ingress".
 
+    _**INGRESS_TYPE**_: The ingress controller available in the cluster, only two are supported: `nginx` or `traefik`. 
+
 
 ## Usage
+
+### Ingress Controllers supported
+
+* NGINX
+* Traefik
 
 ### Submitting a Spark Job
 
@@ -87,3 +94,4 @@ The Spark UI for the application submitted above would be in the following addre
 * Add unit tests
 * Provide build instructions to push image to Image repository for cloud providers.
 * Provide example with authentication setup for `NGINX`.
+* Provide a way for user to pass or define authentication method
