@@ -51,6 +51,7 @@ The controller expose certain paramter to configure how the Spark UI path is con
 
     _**INGRESS_TYPE**_: The ingress controller available in the cluster, only two are supported: `nginx` or `traefik`. 
 
+    _**AUTHENTICATION_SETUP**_: The name of the secret that holds the authentication file for `nginx` or `traefik`. 
 
 ## Usage
 
