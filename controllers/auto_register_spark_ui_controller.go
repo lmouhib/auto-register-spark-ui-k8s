@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
@@ -23,13 +24,12 @@ func createOrUpdateSparkUIIngressObject(
 	service *v1.Service,
 	ingressPath networkingv1.HTTPIngressPath,
 	ingressName string,
-	ingressType string) {
+	ingressType string,
+	authenticationSecret string) {
 
 	ingressClient := clientset.NetworkingV1().Ingresses(service.Namespace)
 
 	ingress, err := ingressClient.Get(context.TODO(), ingressName, metav1.GetOptions{})
-
-	traefikMiddlewareName := "spark-ui-url-strip"
 
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -38,7 +38,7 @@ func createOrUpdateSparkUIIngressObject(
 
 			if ingressType == "traefik" {
 				// Create the Traefik middleware
-				err := ManageTraefikMiddleware(service.Namespace, "create", traefikMiddlewareName)
+				err := ManageTraefikMiddleware(service.Namespace, "create", &authenticationSecret)
 				if err != nil {
 					logger.Error(err)
 					return
@@ -52,7 +52,7 @@ func createOrUpdateSparkUIIngressObject(
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        ingressName,
 					Namespace:   service.Namespace,
-					Annotations: createIngressAnnotations(ingressType, service, traefikMiddlewareName),
+					Annotations: createIngressAnnotations(ingressType, service, &authenticationSecret),
 				},
 				Spec: networkingv1.IngressSpec{
 					IngressClassName: ingressClassName,
@@ -124,7 +124,8 @@ func Add(
 	service *v1.Service,
 	namespacedIngressPath bool,
 	ingressName string,
-	ingressType string) {
+	ingressType string,
+	authenticationSecret *string) {
 
 	logger.Infof("Create ingress rule for Spark Application : %s \n", service.GetName())
 
@@ -152,7 +153,7 @@ func Add(
 	}
 
 	//Call the function responsible for creating or patching the Ingress object
-	createOrUpdateSparkUIIngressObject(ctx, clientset, service, ingressPath, ingressName, ingressType)
+	createOrUpdateSparkUIIngressObject(ctx, clientset, service, ingressPath, ingressName, ingressType, *authenticationSecret)
 
 }
 
@@ -162,13 +163,12 @@ func Delete(
 	service *v1.Service,
 	namespacedIngressPath bool,
 	ingressName string,
-	ingressType string) {
+	ingressType string,
+	authenticationSecret *string) {
 
 	var sparkAppName string
 
 	namespace := service.Namespace
-
-	traefikMiddlewareName := "spark-ui-url-strip"
 
 	// Get the existing ingress
 	ingress, err := clientset.NetworkingV1().Ingresses(namespace).Get(ctx, ingressName, metav1.GetOptions{})
@@ -206,8 +206,8 @@ func Delete(
 
 		// Delete the Traefik middleware
 		if ingressType == "traefik" {
-			ManageTraefikMiddleware(namespace, "delete", traefikMiddlewareName)
-			log.Printf("Deleted middleware %s as ingress object is deleted", traefikMiddlewareName)
+			ManageTraefikMiddleware(namespace, "delete", authenticationSecret)
+			log.Printf("Deleted middleware for authentication and url strip as ingress object is deleted")
 		}
 		return
 	}
@@ -255,22 +255,49 @@ func buidSparkUiPath(namespacedIngressPath bool, service *v1.Service, sparkAppNa
 
 	return sparkUIPath
 }
-func createIngressAnnotations(ingressType string, service *v1.Service, traefikMiddlewareName string) map[string]string {
+func createIngressAnnotations(
+	ingressType string,
+	service *v1.Service,
+	authenticationSecret *string) map[string]string {
 
 	switch ingressType {
 
 	case "nginx":
-		return map[string]string{
+
+		annotationObject := map[string]string{
 			"nginx.ingress.kubernetes.io/rewrite-target": "/$2",
 			"nginx.ingress.kubernetes.io/use-regex":      "true",
 		}
 
+		if authenticationSecret != nil {
+			annotationObject["nginx.ingress.kubernetes.io/auth-type"] = "basic"
+			annotationObject["nginx.ingress.kubernetes.io/auth-secret"] = *authenticationSecret
+			annotationObject["nginx.ingress.kubernetes.io/auth-realm"] = "Authentication Required"
+		}
+
+		return annotationObject
+
 	case "traefik":
-		return map[string]string{
-			"traefik.ingress.kubernetes.io/router.middlewares": fmt.Sprintf("%s-%s@kubernetescrd", service.Namespace, traefikMiddlewareName),
+
+		var middlewareValue string
+
+		if authenticationSecret != nil {
+			middlewareValueList := []string{
+				fmt.Sprintf("%s-%s@kubernetescrd", service.Namespace, "spark-ui-url-auth"),
+				fmt.Sprintf("%s-%s@kubernetescrd", service.Namespace, "spark-ui-url-strip"),
+			}
+			middlewareValue = strings.Join(middlewareValueList, ",\n")
+		} else {
+			middlewareValue = fmt.Sprintf("%s-%s@kubernetescrd", service.Namespace, "spark-ui-url-strip")
+		}
+
+		annotationObject := map[string]string{
+			"traefik.ingress.kubernetes.io/router.middlewares": middlewareValue,
 			"traefik.ingress.kubernetes.io/router.entrypoints": "web",
 			"traefik.ingress.kubernetes.io/router.pathmatcher": "PathRegexp",
 		}
+
+		return annotationObject
 
 	default:
 		logger.Errorf("unsupported ingress type: %s", ingressType)

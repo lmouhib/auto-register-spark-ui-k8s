@@ -54,11 +54,24 @@ func main() {
 
 	// Check for the environment variable for ingress type
 	ingressType := os.Getenv("INGRESS_TYPE")
+
 	if ingressType != "" {
 		logger.Infof("The ingress type is: %v", ingressType)
 	} else {
 		ingressType = "nginx"
 		logger.Infof("Using default ingress type: %v", ingressType)
+	}
+
+	var authenticationSecret *string
+
+	authenticationSecretEnv, notEmpty := os.LookupEnv("AUTHENTICATION_SETUP")
+
+	if notEmpty {
+		authenticationSecret = &authenticationSecretEnv
+		logger.Infof("Authentication secret: %v", authenticationSecret)
+	} else {
+		authenticationSecret = nil
+		logger.Infof("No authentication secret provided")
 	}
 
 	//create the informer factory
@@ -114,14 +127,14 @@ func main() {
 			service := obj.(*v1.Service)
 			if hasLabel(service, labelKey) {
 				logger.Infof("Service %v created with label %v\n", service.GetName(), labelKey)
-				controllers.Add(ctx, clientset, service, namespacedIngressPath, ingressName, ingressType)
+				controllers.Add(ctx, clientset, service, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
 			service := obj.(*v1.Service)
 			if hasLabel(service, labelKey) {
 				logger.Infof("Service %v deleted with label %v \n", service.GetName(), labelKey)
-				controllers.Delete(ctx, clientset, service, namespacedIngressPath, ingressName, ingressType)
+				controllers.Delete(ctx, clientset, service, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
 			}
 		},
 	})
