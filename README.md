@@ -113,8 +113,7 @@ if you change the name of the secret make sure to change also its name in the `R
 
 # Improvements
 
-* Currently this controller work only with `NGINX`, one improvement is to make it generic and to work with any ingress that suport URL rewrite.
+* Currently this controller work only with `NGINX`, one improvement is to make it generic and to work with any ingress that suport URL rewrite or prefix stripping.
 * Add unit tests
 * Provide build instructions to push image to Image repository for cloud providers.
-* Provide example with authentication setup for `NGINX`.
-* Provide a way for user to pass or define authentication method
+* Refactor the controller to use configmap and not environment variables. 
