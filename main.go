@@ -68,7 +68,7 @@ func main() {
 
 	if notEmpty {
 		authenticationSecret = &authenticationSecretEnv
-		logger.Infof("Authentication secret: %v", authenticationSecret)
+		logger.Infof("Authentication secret: %v", *authenticationSecret)
 	} else {
 		authenticationSecret = nil
 		logger.Infof("No authentication secret provided")
