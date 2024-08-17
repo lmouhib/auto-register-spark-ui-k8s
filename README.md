@@ -1,3 +1,6 @@
+![Docker Image Version](https://img.shields.io/docker/v/lmouhib/auto-register-spark-ui-k8s?label=Image&link=https%3A%2F%2Fhub.docker.com%2Fr%2Flmouhib%2Fauto-register-spark-ui-k8s)
+
+
 # Auto Register K8s Spark UI
 
 ## Overview
