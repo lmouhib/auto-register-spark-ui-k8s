@@ -58,7 +58,12 @@ The controller expose certain paramter to configure how the Spark UI path is con
 ### Ingress Controllers supported
 
 * NGINX
+    * In order for the controller to create and manage Ingress based on NGINX, you need to set the environment variable `INGRESS_TYPE` to `nginx`.
 * Traefik
+
+     * In order for the controller to create and manage Ingress based on Traefik, you need to set the environment variable `INGRESS_TYPE` to `traefik`.
+
+    * When using `traefik` the controller will create a a `traefik Middlware` to strip the url and forward it to spark driver. In order manage the lifecycle of the middleware, _**you need to uncomment the in the cluster role the policy that allow to manage the Middlware.**_ Withouth it the controller will fail.
 
 ### Submitting a Spark Job
 
