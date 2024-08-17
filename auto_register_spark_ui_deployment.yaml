@@ -15,13 +15,14 @@ rules:
 - apiGroups: ["networking.k8s.io"]
   resources: ["ingresses"]
   verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
-- apiGroups: ["traefik.io"]
-  resources: ["middlewares"]
-  verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
 - apiGroups: [""] #needed for accessing the secret with list of username/password as created with htpasswd
   resources: ["secrets"]
   resourceNames: ["spark-ui-auth"] # change the secret name to the one you created
   verbs: ["get"]
+# Uncomment the following lines if you use Traefik as ingress controller
+# - apiGroups: ["traefik.io"]
+#   resources: ["middlewares"]
+#   verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
