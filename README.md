@@ -51,6 +51,7 @@ The controller expose certain paramter to configure how the Spark UI path is con
 
     _**INGRESS_TYPE**_: The ingress controller available in the cluster, only two are supported: `nginx` or `traefik`. 
 
+    _**AUTHENTICATION_SETUP**_: The name of the secret that holds the authentication file for `nginx` or `traefik`. 
 
 ## Usage
 
@@ -83,6 +84,28 @@ and will provide an `EXTERNAL-IP` that should be used as `proxyRedirectUri`.
 
 The Spark UI for the application submitted above would be in the following address : `http://ngnix-ip-or-dns-name/pi/`.
 
+### Setting up authentication
+
+To set up authentication, follow these steps:
+
+1. **Create a password file using `htpasswd`:**
+
+```sh
+htpasswd -c auth <username>
+```
+You will be prompted to enter and confirm a password for the specified username. The command will create a file name `auth`.
+
+2. Create a Kubernetes secret:
+
+Once the password file is created, you need to create a Kubernetes secret to store the authentication data. Use the following command to create the secret, ensuring the key is named auth:
+
+```sh
+kubectl create secret generic spark-ui-auth --from-file=auth=./auth
+```
+if you change the name of the secret make sure to change also its name in the `RBAC` as well as in the environment variable `AUTHENTICATION_SETUP` in the file `auto_register_spark_ui_deployment.yaml`.
+
+3. Deploy the controller, when a new ingress is created by the conroller, it will add the necessary annotation as well as the create the middleware for traefik to use the sercret that contains the list of username and password you created in step 1 and 2.
+
 ### Demo
 
 <img src="https://github.com/lmouhib/auto-register-spark-ui-k8s/blob/main/assets/demo.gif" width="600" alt="Demo gif">
@@ -90,8 +113,7 @@ The Spark UI for the application submitted above would be in the following addre
 
 # Improvements
 
-* Currently this controller work only with `NGINX`, one improvement is to make it generic and to work with any ingress that suport URL rewrite.
+* Currently this controller work only with `NGINX`, one improvement is to make it generic and to work with any ingress that suport URL rewrite or prefix stripping.
 * Add unit tests
 * Provide build instructions to push image to Image repository for cloud providers.
-* Provide example with authentication setup for `NGINX`.
-* Provide a way for user to pass or define authentication method
+* Refactor the controller to use configmap and not environment variables. 

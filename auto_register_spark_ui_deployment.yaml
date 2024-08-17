@@ -18,6 +18,10 @@ rules:
 - apiGroups: ["traefik.io"]
   resources: ["middlewares"]
   verbs: ["create", "get", "list", "watch", "update", "patch", "delete"]
+- apiGroups: [""] #needed for accessing the secret with list of username/password as created with htpasswd
+  resources: ["secrets"]
+  resourceNames: ["spark-ui-auth"] # change the secret name to the one you created
+  verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -51,7 +55,7 @@ spec:
       serviceAccountName: auto-register-spark-ui-sa
       containers:
         - name: auto-register-k8s-spark-ui
-          image: lmouhib/auto-register-spark-ui-k8s:0.0.2
+          image: lmouhib/auto-register-spark-ui-k8s:0.0.3
           securityContext:
             runAsUser: 1000
             runAsGroup: 3000
@@ -61,14 +65,18 @@ spec:
               - ALL
             readOnlyRootFilesystem: true
           env:
-            - name: SPARK_LABEL_SERVICE_SELECTOR
+            - name: SPARK_LABEL_SERVICE_SELECTOR #default spark-app-selector, the label that is used to select the service
               value: "spark-app-selector"
-            - name: SPARK_NAMESPACE
+            - name: SPARK_NAMESPACE #default default
               value: "default"
-            - name: NAMESPACED_INGRESS_PATH
+            - name: NAMESPACED_INGRESS_PATH #default false, no namespace is prefixed to path
               value: "false"
-            - name: INGRESS_NAME
+            - name: INGRESS_NAME #default spark-ui-ingress
               value: "spark-ui-ingress"
+            - name: AUTHENTICATION_SETUP #No authentication is setup at proxy
+              value: "spark-ui-auth"
+            - name: INGRESS_TYPE #default NGINX
+              value: "traefik"
           resources:
             requests:
               memory: "64Mi"
