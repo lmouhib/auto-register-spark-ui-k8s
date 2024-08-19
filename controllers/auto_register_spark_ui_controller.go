@@ -118,6 +118,9 @@ func createOrUpdateSparkUIIngressObject(
 	}
 }
 
+// Add function called by the informer when a service is created
+// It takes the service object, creates the ingress path
+// and calls the function responsible for creating or patching the Ingress object
 func Add(
 	ctx context.Context,
 	clientset kubernetes.Interface,
@@ -157,6 +160,9 @@ func Add(
 
 }
 
+// Delete function called by the informer when a service is deleted
+// It takes the servicename, either deletes the ingress object or patch the existing one by
+// removing the path that matches the sparkAppName
 func Delete(
 	ctx context.Context,
 	clientset *kubernetes.Clientset,
@@ -244,7 +250,7 @@ func Delete(
 	log.Printf("Deleted path for sparkAppName %s from ingress %s", sparkAppName, ingressName)
 }
 
-func buidSparkUiPath(namespacedIngressPath bool, service *v1.Service, sparkAppName string) string {
+func buildSparkUIPath(namespacedIngressPath bool, service *v1.Service, sparkAppName string) string {
 	var sparkUIPath string
 
 	if namespacedIngressPath {
