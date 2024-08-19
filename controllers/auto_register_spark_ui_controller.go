@@ -138,7 +138,7 @@ func Add(
 
 	logger.Infof("Spark App Name: %v", sparkAppName)
 
-	var sparkUIPath string = buidSparkUiPath(namespacedIngressPath, service, sparkAppName)
+	var sparkUIPath string = buildSparkUIPath(namespacedIngressPath, service, sparkAppName)
 
 	logger.Infof("Spark UI path: %v", sparkUIPath)
 
@@ -185,7 +185,7 @@ func Delete(
 
 	sparkAppName = service.Spec.Selector["spark-app-name"]
 
-	var sparkUIPath string = buidSparkUiPath(namespacedIngressPath, service, sparkAppName)
+	var sparkUIPath string = buildSparkUIPath(namespacedIngressPath, service, sparkAppName)
 
 	logger.Infof("Spark UI path to remove: %v", sparkUIPath)
 
