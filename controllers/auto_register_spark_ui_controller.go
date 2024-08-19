@@ -20,7 +20,7 @@ import (
 // It takes the ingress path, either creates a new ingress object or patch the existing one
 func createOrUpdateSparkUIIngressObject(
 	ctx context.Context,
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
 	service *v1.Service,
 	ingressPath networkingv1.HTTPIngressPath,
 	ingressName string,
@@ -120,7 +120,7 @@ func createOrUpdateSparkUIIngressObject(
 
 func Add(
 	ctx context.Context,
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
 	service *v1.Service,
 	namespacedIngressPath bool,
 	ingressName string,
