@@ -82,7 +82,7 @@ func createOrUpdateSparkUIIngressObject(
 	} else {
 
 		logger.Infof("Ingress %v already exists", ingressName)
-		logger.Infof("Updateing ingress with %v", ingressPath)
+		logger.Infof("Updating ingress with %v", ingressPath)
 
 		ingressCopy := ingress.DeepCopy()
 		ingressCopy.Spec.Rules[0].HTTP.Paths = append(ingress.Spec.Rules[0].HTTP.Paths,

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,53 +29,90 @@ func TestAdd(t *testing.T) {
 	// Create a mock logger
 	mockLogger := new(MockLogger)
 
-	//Set environment variables used to configure the controller behavior
-	os.Setenv("NAMESPACED_INGRESS_PATH", "false")
-	os.Setenv("SPARK_NAMESPACE", "default")
-	os.Setenv("AUTHENTICATION_SETUP", "auth-secret")
-
 	// Create a fake Kubernetes clientset
 	var clientset kubernetes.Interface = fake.NewSimpleClientset()
 
 	// Define other parameters
 	ctx := context.TODO()
-	namespacedIngressPath := true
+	namespacedIngressPath := false
 	ingressName := "test-ingress"
-	ingressType := "test-type"
+	ingressType := "nginx"
 	authenticationSecret := new(string)
 
 	// Create a mock service with a specific selector
-	serviceCustomLabel := &v1.Service{
+	defaultService := &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
-				"custom-spark-app-selector": "my-label",
-				"spark-app-name":            "test-spark-app",
+				"spark-app-name": "test-spark-app",
 			},
 		},
 	}
 
-	os.Setenv("SPARK_LABEL_SERVICE_SELECTOR", "custom-spark-app-selector")
-
 	// Expect the logger to receive the correct log message
-	mockLogger.On("Infof", "Create ingress rule for Spark Application : %s \n", serviceCustomLabel.GetName()).Return()
+	mockLogger.On("Infof", "Create ingress rule for Spark Application : %s \n", defaultService.GetName()).Return()
 
 	// Call the Add function
-	Add(ctx, clientset, serviceCustomLabel, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
-
-	// Verify that the service selector was accessed correctly
-	assert.Equal(t, "my-label", serviceCustomLabel.Spec.Selector["custom-spark-app-selector"])
+	Add(ctx, clientset, defaultService, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
 
 	// Verify that the correct ingress was created
 	ingresses, err := clientset.NetworkingV1().Ingresses("").List(ctx, metav1.ListOptions{})
 	assert.NoError(t, err)
-	assert.Len(t, ingresses.Items, 1)
 
 	ingress := ingresses.Items[0]
 	assert.Equal(t, ingressName, ingress.Name)
-	assert.Equal(t, serviceCustomLabel.Namespace, "default")
-	assert.Equal(t, "/default/test-spark-app(/|$)(.*)", ingress.Spec.Rules[0].HTTP.Paths[0].Path)
+	assert.Equal(t, defaultService.Namespace, "default")
+	assert.Equal(t, "/test-spark-app(/|$)(.*)", ingress.Spec.Rules[0].HTTP.Paths[0].Path)
+
+	namespacedIngressPath = true
+
+	// Create a mock service with a specific selector
+	defaultService = &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+		},
+		Spec: v1.ServiceSpec{
+			Selector: map[string]string{
+				"spark-app-name": "default-spark-app",
+			},
+		},
+	}
+
+	// Call the Add function
+	Add(ctx, clientset, defaultService, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
+
+	// Verify that the correct ingress was created
+	ingresses, err = clientset.NetworkingV1().Ingresses("").List(ctx, metav1.ListOptions{})
+	assert.NoError(t, err)
+	assert.Len(t, ingresses.Items, 1)
+
+	ingress = ingresses.Items[0]
+	assert.Equal(t, defaultService.Namespace, "default")
+	assert.Equal(t, "/default/default-spark-app(/|$)(.*)", ingress.Spec.Rules[0].HTTP.Paths[1].Path)
+
+	ingressName = "traefik-ingress"
+	ingressType = "traefik"
+	namespacedIngressPath = false
+
+	// Create a mock service with a specific selector
+	defaultService = &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+		},
+		Spec: v1.ServiceSpec{
+			Selector: map[string]string{
+				"spark-app-name": "default-spark-app",
+			},
+		},
+	}
+
+	Add(ctx, clientset, defaultService, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
+
+	ingresses, _ = clientset.NetworkingV1().Ingresses("").List(ctx, metav1.ListOptions{})
+	ingress = ingresses.Items[1]
+
+	assert.Equal(t, "default-spark-ui-url-strip@kubernetescrd", ingress.Annotations["traefik.ingress.kubernetes.io/router.middlewares"], "Ingress does not have the expected Traefik middleware annotation")
 
 }
