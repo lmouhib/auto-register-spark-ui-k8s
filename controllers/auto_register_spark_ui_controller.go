@@ -12,6 +12,7 @@ import (
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	logger "k8s.io/klog/v2"
 )
@@ -20,7 +21,8 @@ import (
 // It takes the ingress path, either creates a new ingress object or patch the existing one
 func createOrUpdateSparkUIIngressObject(
 	ctx context.Context,
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
+	dynamicClient dynamic.Interface,
 	service *v1.Service,
 	ingressPath networkingv1.HTTPIngressPath,
 	ingressName string,
@@ -38,7 +40,7 @@ func createOrUpdateSparkUIIngressObject(
 
 			if ingressType == "traefik" {
 				// Create the Traefik middleware
-				err := ManageTraefikMiddleware(service.Namespace, "create", &authenticationSecret)
+				err := ManageTraefikMiddleware(dynamicClient, service.Namespace, "create", &authenticationSecret)
 				if err != nil {
 					logger.Error(err)
 					return
@@ -82,7 +84,7 @@ func createOrUpdateSparkUIIngressObject(
 	} else {
 
 		logger.Infof("Ingress %v already exists", ingressName)
-		logger.Infof("Updateing ingress with %v", ingressPath)
+		logger.Infof("Updating ingress with %v", ingressPath)
 
 		ingressCopy := ingress.DeepCopy()
 		ingressCopy.Spec.Rules[0].HTTP.Paths = append(ingress.Spec.Rules[0].HTTP.Paths,
@@ -118,9 +120,13 @@ func createOrUpdateSparkUIIngressObject(
 	}
 }
 
+// Add function called by the informer when a service is created
+// It takes the service object, creates the ingress path
+// and calls the function responsible for creating or patching the Ingress object
 func Add(
 	ctx context.Context,
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
+	dynamicClient dynamic.Interface,
 	service *v1.Service,
 	namespacedIngressPath bool,
 	ingressName string,
@@ -135,7 +141,7 @@ func Add(
 
 	logger.Infof("Spark App Name: %v", sparkAppName)
 
-	var sparkUIPath string = buidSparkUiPath(namespacedIngressPath, service, sparkAppName)
+	var sparkUIPath string = buildSparkUIPath(namespacedIngressPath, service, sparkAppName)
 
 	logger.Infof("Spark UI path: %v", sparkUIPath)
 
@@ -153,13 +159,17 @@ func Add(
 	}
 
 	//Call the function responsible for creating or patching the Ingress object
-	createOrUpdateSparkUIIngressObject(ctx, clientset, service, ingressPath, ingressName, ingressType, *authenticationSecret)
+	createOrUpdateSparkUIIngressObject(ctx, clientset, dynamicClient, service, ingressPath, ingressName, ingressType, *authenticationSecret)
 
 }
 
+// Delete function called by the informer when a service is deleted
+// It takes the servicename, either deletes the ingress object or patch the existing one by
+// removing the path that matches the sparkAppName
 func Delete(
 	ctx context.Context,
 	clientset *kubernetes.Clientset,
+	dynamicClient dynamic.Interface,
 	service *v1.Service,
 	namespacedIngressPath bool,
 	ingressName string,
@@ -179,7 +189,7 @@ func Delete(
 
 	sparkAppName = service.Spec.Selector["spark-app-name"]
 
-	var sparkUIPath string = buidSparkUiPath(namespacedIngressPath, service, sparkAppName)
+	var sparkUIPath string = buildSparkUIPath(namespacedIngressPath, service, sparkAppName)
 
 	logger.Infof("Spark UI path to remove: %v", sparkUIPath)
 
@@ -206,7 +216,7 @@ func Delete(
 
 		// Delete the Traefik middleware
 		if ingressType == "traefik" {
-			ManageTraefikMiddleware(namespace, "delete", authenticationSecret)
+			ManageTraefikMiddleware(dynamicClient, namespace, "delete", authenticationSecret)
 			log.Printf("Deleted middleware for authentication and url strip as ingress object is deleted")
 		}
 		return
@@ -244,7 +254,7 @@ func Delete(
 	log.Printf("Deleted path for sparkAppName %s from ingress %s", sparkAppName, ingressName)
 }
 
-func buidSparkUiPath(namespacedIngressPath bool, service *v1.Service, sparkAppName string) string {
+func buildSparkUIPath(namespacedIngressPath bool, service *v1.Service, sparkAppName string) string {
 	var sparkUIPath string
 
 	if namespacedIngressPath {

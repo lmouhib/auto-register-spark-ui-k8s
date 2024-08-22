@@ -10,6 +10,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -33,6 +34,8 @@ func main() {
 		logger.Fatal(err, "Error building clientset")
 	}
 	logger.Infof("Connected to kubernetes cluster")
+
+	dynamicClient, err := dynamic.NewForConfig(config)
 
 	// Check for the environment variable for spark service selector
 	labelKey := os.Getenv("SPARK_LABEL_SERVICE_SELECTOR")
@@ -127,14 +130,14 @@ func main() {
 			service := obj.(*v1.Service)
 			if hasLabel(service, labelKey) {
 				logger.Infof("Service %v created with label %v\n", service.GetName(), labelKey)
-				controllers.Add(ctx, clientset, service, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
+				controllers.Add(ctx, clientset, dynamicClient, service, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
 			service := obj.(*v1.Service)
 			if hasLabel(service, labelKey) {
 				logger.Infof("Service %v deleted with label %v \n", service.GetName(), labelKey)
-				controllers.Delete(ctx, clientset, service, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
+				controllers.Delete(ctx, clientset, dynamicClient, service, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
 			}
 		},
 	})
