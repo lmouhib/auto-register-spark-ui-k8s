@@ -2,31 +2,16 @@ package controllers
 
 import (
 	"context"
+	"errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
 	logger "k8s.io/klog/v2"
 )
 
-func ManageTraefikMiddleware(namespace, action string, authenticationSecret *string) error {
-
-	// Extract the config from the clientset
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		logger.Errorf("error creating in-cluster config: %v", err)
-		return err
-	}
-
-	// Create the dynamic client to create generic resources
-	// This is needed since Treafik Middleware is a custom resource
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		logger.Errorf("error creating dynamic client: %v", err)
-		return err
-	}
+func ManageTraefikMiddleware(dynamicClient dynamic.Interface, namespace, action string, authenticationSecret *string) error {
 
 	// Define the GVR (GroupVersionResource)
 	gvr := schema.GroupVersionResource{
@@ -65,7 +50,7 @@ func ManageTraefikMiddleware(namespace, action string, authenticationSecret *str
 
 	case "delete":
 		// Delete the Middleware object
-		err = dynamicClient.Resource(gvr).Namespace(namespace).Delete(context.TODO(), "spark-ui-url-strip", metav1.DeleteOptions{})
+		err := dynamicClient.Resource(gvr).Namespace(namespace).Delete(context.TODO(), "spark-ui-url-strip", metav1.DeleteOptions{})
 
 		if authenticationSecret != nil {
 			err = dynamicClient.Resource(gvr).Namespace(namespace).Delete(context.TODO(), "spark-ui-url-auth", metav1.DeleteOptions{})
@@ -79,14 +64,14 @@ func ManageTraefikMiddleware(namespace, action string, authenticationSecret *str
 
 	default:
 		logger.Errorf("invalid action: %v", action)
-		return err
+		return errors.New("invalid action")
 	}
 
 	return nil
 }
 
 func createMiddlewareObject(
-	dynamicClient *dynamic.DynamicClient,
+	dynamicClient dynamic.Interface,
 	gvr schema.GroupVersionResource,
 	middlewareName string,
 	namespace string,

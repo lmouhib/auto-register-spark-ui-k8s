@@ -12,6 +12,7 @@ import (
 	errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	logger "k8s.io/klog/v2"
 )
@@ -21,6 +22,7 @@ import (
 func createOrUpdateSparkUIIngressObject(
 	ctx context.Context,
 	clientset kubernetes.Interface,
+	dynamicClient dynamic.Interface,
 	service *v1.Service,
 	ingressPath networkingv1.HTTPIngressPath,
 	ingressName string,
@@ -38,7 +40,7 @@ func createOrUpdateSparkUIIngressObject(
 
 			if ingressType == "traefik" {
 				// Create the Traefik middleware
-				err := ManageTraefikMiddleware(service.Namespace, "create", &authenticationSecret)
+				err := ManageTraefikMiddleware(dynamicClient, service.Namespace, "create", &authenticationSecret)
 				if err != nil {
 					logger.Error(err)
 					return
@@ -124,6 +126,7 @@ func createOrUpdateSparkUIIngressObject(
 func Add(
 	ctx context.Context,
 	clientset kubernetes.Interface,
+	dynamicClient dynamic.Interface,
 	service *v1.Service,
 	namespacedIngressPath bool,
 	ingressName string,
@@ -156,7 +159,7 @@ func Add(
 	}
 
 	//Call the function responsible for creating or patching the Ingress object
-	createOrUpdateSparkUIIngressObject(ctx, clientset, service, ingressPath, ingressName, ingressType, *authenticationSecret)
+	createOrUpdateSparkUIIngressObject(ctx, clientset, dynamicClient, service, ingressPath, ingressName, ingressType, *authenticationSecret)
 
 }
 
@@ -166,6 +169,7 @@ func Add(
 func Delete(
 	ctx context.Context,
 	clientset *kubernetes.Clientset,
+	dynamicClient dynamic.Interface,
 	service *v1.Service,
 	namespacedIngressPath bool,
 	ingressName string,
@@ -212,7 +216,7 @@ func Delete(
 
 		// Delete the Traefik middleware
 		if ingressType == "traefik" {
-			ManageTraefikMiddleware(namespace, "delete", authenticationSecret)
+			ManageTraefikMiddleware(dynamicClient, namespace, "delete", authenticationSecret)
 			log.Printf("Deleted middleware for authentication and url strip as ingress object is deleted")
 		}
 		return

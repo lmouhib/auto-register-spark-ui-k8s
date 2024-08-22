@@ -8,6 +8,9 @@ import (
 	"github.com/stretchr/testify/mock"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -31,6 +34,7 @@ func TestAdd(t *testing.T) {
 
 	// Create a fake Kubernetes clientset
 	var clientset kubernetes.Interface = fake.NewSimpleClientset()
+	var dynamicClient dynamic.Interface = dynamicfake.NewSimpleDynamicClient(runtime.NewScheme())
 
 	// Define other parameters
 	ctx := context.TODO()
@@ -55,7 +59,7 @@ func TestAdd(t *testing.T) {
 	mockLogger.On("Infof", "Create ingress rule for Spark Application : %s \n", defaultService.GetName()).Return()
 
 	// Call the Add function
-	Add(ctx, clientset, defaultService, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
+	Add(ctx, clientset, dynamicClient, defaultService, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
 
 	// Verify that the correct ingress was created
 	ingresses, err := clientset.NetworkingV1().Ingresses("").List(ctx, metav1.ListOptions{})
@@ -81,7 +85,7 @@ func TestAdd(t *testing.T) {
 	}
 
 	// Call the Add function
-	Add(ctx, clientset, defaultService, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
+	Add(ctx, clientset, dynamicClient, defaultService, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
 
 	// Verify that the correct ingress was created
 	ingresses, err = clientset.NetworkingV1().Ingresses("").List(ctx, metav1.ListOptions{})
