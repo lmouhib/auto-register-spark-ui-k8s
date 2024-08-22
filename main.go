@@ -137,7 +137,7 @@ func main() {
 			service := obj.(*v1.Service)
 			if hasLabel(service, labelKey) {
 				logger.Infof("Service %v deleted with label %v \n", service.GetName(), labelKey)
-				controllers.Delete(ctx, clientset, service, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
+				controllers.Delete(ctx, clientset, dynamicClient, service, namespacedIngressPath, ingressName, ingressType, authenticationSecret)
 			}
 		},
 	})
